@@ -1,0 +1,56 @@
+# Ignore build output directories
+build/
+bin/
+
+# Ignore compiled object files
+*.o
+*.obj
+
+# Ignore compiled executables
+*.exe
+*.out
+*.app
+
+# Ignore shader binary cache (if applicable)
+*.spv
+
+# Ignore Visual Studio Code workspace settings
+.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# Ignore temporary system files
+*.tmp
+*.log
+*.DS_Store
+Thumbs.db
+
+# Ignore backup or swap files
+*~
+*.swp
+*.swo
+
+# Ignore MacOS-specific files
+.DS_Store
+
+# Ignore Windows-specific files
+*.stackdump
+
+# Ignore compiled libraries
+*.a
+*.lib
+*.dll
+*.dylib
+*.so
+
+# Ignore core dumps
+core
+*.core
+
+# Ignore user-specific files
+*.iml
+.idea/
+
+# Ignore Git-related files
+*.orig
