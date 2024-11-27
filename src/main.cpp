@@ -28,6 +28,10 @@ int main() {
         return -1;
     }
 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
     if (!window) {
         std::cerr << "GLFW window creation failed!" << std::endl;
@@ -36,7 +40,7 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
-    glewInit(); 
+    glewInit();
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
