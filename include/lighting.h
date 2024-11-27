@@ -2,6 +2,7 @@
 #define LIGHTING_H
 
 #include <glm/glm.hpp>
+#include "shader.h"      
 
 struct Light {
     glm::vec3 position;

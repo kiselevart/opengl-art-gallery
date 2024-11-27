@@ -28,7 +28,7 @@ $(TARGET): $(OBJ_FILES)
 	$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o $(TARGET) $(LIBS)
 	@echo "Build successful! Executable: $(TARGET)"
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp $(INCLUDE_DIR)/%.h
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 	@echo "Compiled: $< -> $@"
@@ -42,3 +42,4 @@ clean:
 
 run: all
 	./$(TARGET)
+
