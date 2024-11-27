@@ -24,29 +24,27 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 
 int main() {
     if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW!" << std::endl;
+        std::cerr << "GLFW initialization failed!" << std::endl;
         return -1;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Art Gallery", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
     if (!window) {
-        std::cerr << "Failed to create GLFW window!" << std::endl;
+        std::cerr << "GLFW window creation failed!" << std::endl;
         glfwTerminate();
         return -1;
     }
 
     glfwMakeContextCurrent(window);
+    glewInit(); 
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
 
     glEnable(GL_DEPTH_TEST);
 
     Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
-    Shader shader("vertex_shader.glsl", "fragment_shader.glsl");
+    Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
     // GLuint texture = loadTexture("path_to_texture.jpg");
 
     Light light = {

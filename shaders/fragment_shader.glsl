@@ -1,4 +1,4 @@
-#version 330 core
+#version 130 core
 
 struct Light {
     vec3 position;
@@ -34,5 +34,9 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0); // Shininess = 32
     vec3 specular = light.specular * spec;
 
+    // Final color output combining ambient, diffuse, and specular components
     vec3 result = ambient + diffuse + specular;
-    FragColor = vec4
+
+    // Set the final color output
+    FragColor = vec4(result, 1.0); // Setting alpha to 1.0 (opaque)
+}
