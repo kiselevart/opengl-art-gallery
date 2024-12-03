@@ -25,7 +25,7 @@ void Camera::processKeyboardInput(GLFWwindow* window, float deltaTime) {
 }
 
 void Camera::processMouseMovement(float xpos, float ypos) {
-    float xoffset = xpos - 400.0f; // center of screen
+    float xoffset = xpos - 400.0f; 
     float yoffset = 300.0f - ypos;
     yaw += xoffset * mouseSensitivity;
     pitch += yoffset * mouseSensitivity;

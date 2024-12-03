@@ -6,6 +6,7 @@
 #include "shader.h"
 #include "texture.h"
 #include "lighting.h"
+#include "plane.h"
 #include <iostream>
 
 float lastX = 400, lastY = 300;
@@ -49,7 +50,9 @@ int main() {
 
     Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
     Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
-    // GLuint texture = loadTexture("path_to_texture.jpg");
+
+    GLuint planeVAO, planeVBO, planeTexture;
+    initPlane(planeVAO, planeVBO, planeTexture, "assets/textures/wooden_floor.jpg");
 
     Light light = {
         glm::vec3(1.2f, 1.0f, 2.0f),
