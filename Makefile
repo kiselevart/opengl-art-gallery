@@ -16,16 +16,19 @@ TARGET = $(BIN_DIR)/ArtGallery
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC_FILES))
 
-# Libraries and includes
-LIBS = -lGL -lglfw -lGLEW -lm
-INCLUDES = -I$(INCLUDE_DIR)
+# Libraries and includes for macOS
+LIBS = -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lglfw -lGLEW
+INCLUDES = -I$(INCLUDE_DIR) -I/usr/local/include -I/opt/homebrew/include
+
+# Add library paths for M1 Mac
+LDFLAGS = -L/usr/local/lib -L/opt/homebrew/lib
 
 # Rules
 all: setup $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o $(TARGET) $(LIBS)
+	$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o $(TARGET) $(LDFLAGS) $(LIBS)
 	@echo "Build successful! Executable: $(TARGET)"
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
@@ -42,4 +45,3 @@ clean:
 
 run: all
 	./$(TARGET)
-

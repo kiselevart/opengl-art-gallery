@@ -13,9 +13,15 @@ uniform mat4 view;       // View transformation matrix
 uniform mat4 projection; // Projection transformation matrix
 
 void main() {
-    FragPos = vec3(model * vec4(aPos, 1.0)); // Transform vertex to world space
-    Normal = mat3(transpose(inverse(model))) * aNormal; // Transform normals
+    // Transform vertex position to world space
+    FragPos = vec3(model * vec4(aPos, 1.0));
+
+    // Transform normal to world space using inverse transpose of the model matrix
+    Normal = mat3(transpose(inverse(model))) * aNormal;
+
+    // Pass the texture coordinates to the fragment shader
     TexCoords = aTexCoords;
 
-    gl_Position = projection * view * vec4(FragPos, 1.0); // Final position
+    // Apply the view and projection transformations to the vertex position
+    gl_Position = projection * view * vec4(FragPos, 1.0);
 }

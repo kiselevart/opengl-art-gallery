@@ -2,6 +2,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <GL/glew.h>
+
+// Utility function to check OpenGL errors
+void checkOpenGLError(const std::string &message) {
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cerr << "OpenGL Error (" << message << "): " << err << std::endl;
+    }
+}
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     std::string vertexCode;
@@ -42,6 +51,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     if (!success) {
         glGetShaderInfoLog(vertex, 512, NULL, infoLog);
         std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+    } else {
+        std::cout << "Vertex Shader Compiled Successfully!" << std::endl;
     }
 
     // Compile fragment shader
@@ -52,6 +63,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     if (!success) {
         glGetShaderInfoLog(fragment, 512, NULL, infoLog);
         std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+    } else {
+        std::cout << "Fragment Shader Compiled Successfully!" << std::endl;
     }
 
     // Link shaders into a program
@@ -63,26 +76,34 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     if (!success) {
         glGetProgramInfoLog(ID, 512, NULL, infoLog);
         std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+    } else {
+        std::cout << "Shader Program Linked Successfully!" << std::endl;
     }
 
     // Clean up shaders after linking
     glDeleteShader(vertex);
     glDeleteShader(fragment);
-}
 
+    // Check for OpenGL errors after shader setup
+    checkOpenGLError("Shader Compilation and Linking");
+}
 
 void Shader::use() {
     glUseProgram(ID);
+    checkOpenGLError("glUseProgram");
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &mat) {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+    checkOpenGLError("setMat4");
 }
 
 void Shader::setVec3(const std::string &name, const glm::vec3 &value) {
     glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
+    checkOpenGLError("setVec3");
 }
 
 void Shader::setFloat(const std::string &name, float value) {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+    checkOpenGLError("setFloat");
 }

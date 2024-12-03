@@ -37,6 +37,6 @@ void main() {
     // Final color output combining ambient, diffuse, and specular components
     vec3 result = ambient + diffuse + specular;
 
-    // Set the final color output
+    // Set the final color output with alpha set to 1.0 for full opacity
     FragColor = vec4(result, 1.0); // Setting alpha to 1.0 (opaque)
 }

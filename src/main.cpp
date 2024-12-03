@@ -13,7 +13,15 @@ float lastX = 400, lastY = 300;
 bool firstMouse = true;
 float xpos, ypos;
 
+void checkOpenGLErrors(const char* function) {
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        std::cerr << "OpenGL error in " << function << ": " << error << std::endl;
+    }
+}
+
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+    (void)window;
     if (firstMouse) {
         lastX = xposIn;
         lastY = yposIn;
@@ -24,6 +32,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 }
 
 int main() {
+    // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "GLFW initialization failed!" << std::endl;
         return -1;
@@ -32,7 +41,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // macOS requires this for core profile
 
+    // Create GLFW window
     GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
     if (!window) {
         std::cerr << "GLFW window creation failed!" << std::endl;
@@ -40,25 +51,40 @@ int main() {
         return -1;
     }
 
+    // Make the OpenGL context current
     glfwMakeContextCurrent(window);
-    glewInit();
+
+    glewExperimental = GL_TRUE;  
+    if (glewInit() != GLEW_OK) {
+        std::cerr << "GLEW initialization failed!" << std::endl;
+        return -1;
+    }
+
+    // Check if OpenGL context was created successfully
+    if (glGetString(GL_VERSION) == nullptr) {
+        std::cerr << "Error: OpenGL context creation failed!" << std::endl;
+        return -1;
+    }
+
+    // Log OpenGL version
+    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
 
     glEnable(GL_DEPTH_TEST);
 
-    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+    Camera camera(glm::vec3(0.0f, 1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
     Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
     GLuint planeVAO, planeVBO, planeTexture;
     initPlane(planeVAO, planeVBO, planeTexture, "assets/textures/wooden_floor.jpg");
 
     Light light = {
-        glm::vec3(1.2f, 1.0f, 2.0f),
-        glm::vec3(0.2f),
-        glm::vec3(0.5f),
-        glm::vec3(1.0f)
+        glm::vec3(2.0f, 2.0f, 2.0f),  
+        glm::vec3(0.3f, 0.3f, 0.3f),   // Ambient
+        glm::vec3(0.7f, 0.7f, 0.7f),   // Diffuse
+        glm::vec3(1.0f, 1.0f, 1.0f)    // Specular
     };
 
     float deltaTime = 0.0f, lastFrame = 0.0f;
@@ -68,29 +94,38 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        glClearColor(0.2f, 0.4f, 0.8f, 1.0f); // Set background color
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Process input and update camera
         float xOffset = xpos - lastX;
-        float yOffset = lastY - ypos; // reversed
+        float yOffset = lastY - ypos;  // Reversed Y-axis
         lastX = xpos;
         lastY = ypos;
         camera.processMouseMovement(xOffset, yOffset);
-
         camera.processKeyboardInput(window, deltaTime);
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
+
         shader.use();
         shader.setMat4("view", camera.getViewMatrix());
         shader.setMat4("projection", glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f));
         setLightProperties(shader, light, camera.position);
 
-        // Render objects here
-        // glBindVertexArray(objectVAO);
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, texture);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        // Set model matrix for plane
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));  // Adjust plane's position
+        shader.setMat4("model", model);
 
+        // Render plane
+        glBindVertexArray(planeVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, planeTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
+        // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
