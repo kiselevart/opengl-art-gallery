@@ -16,12 +16,16 @@ TARGET = $(BIN_DIR)/ArtGallery
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC_FILES))
 
-# Libraries and includes for macOS
-LIBS = -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lglfw -lGLEW
-INCLUDES = -I$(INCLUDE_DIR) -I/usr/local/include -I/opt/homebrew/include
-
-# Add library paths for M1 Mac
-LDFLAGS = -L/usr/local/lib -L/opt/homebrew/lib
+# OS Detection
+ifeq ($(shell uname), Darwin)  # macOS
+	LIBS = -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lglfw -lGLEW
+	INCLUDES = -I$(INCLUDE_DIR) -I/usr/local/include -I/opt/homebrew/include
+	LDFLAGS = -L/usr/local/lib -L/opt/homebrew/lib
+else                           # Linux
+	LIBS = -lGL -lglfw -lGLEW
+	INCLUDES = -I$(INCLUDE_DIR)
+	LDFLAGS =
+endif
 
 # Rules
 all: setup $(TARGET)

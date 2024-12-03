@@ -90,12 +90,10 @@ int main() {
     float deltaTime = 0.0f, lastFrame = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
+        std::cout << "Rendering frame..." << std::endl; // tests if frame renders: can be uncommented later
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        glClearColor(0.2f, 0.4f, 0.8f, 1.0f); // Set background color
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Process input and update camera
         float xOffset = xpos - lastX;
@@ -105,6 +103,11 @@ int main() {
         camera.processMouseMovement(xOffset, yOffset);
         camera.processKeyboardInput(window, deltaTime);
 
+        // quit by pressing esc key
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(window, true);
+        }        
+        
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
 
