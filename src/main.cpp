@@ -19,6 +19,10 @@ void checkOpenGLErrors(const char* function) {
     }
 }
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     (void)window;
     if (firstMouse) {
@@ -57,10 +61,13 @@ int main() {
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
 
-    glEnable(GL_DEPTH_TEST);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);    
+    
+    glDisable(GL_DEPTH_TEST); // enable this back
 
     Camera camera(glm::vec3(0.0f, 1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
     Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
@@ -125,6 +132,7 @@ int main() {
         shader.use();
         shader.setMat4("view", camera.getViewMatrix());
         shader.setMat4("projection", glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f));
+        
         setLightProperties(shader, light, camera.position);
 
         glm::mat4 model = glm::mat4(1.0f);
@@ -135,6 +143,23 @@ int main() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, planeTexture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // Print matrices
+        // std::cout << "View Matrix: " << std::endl;
+        // for (int i = 0; i < 4; ++i) {
+        //     for (int j = 0; j < 4; ++j) {
+        //         std::cout << camera.getViewMatrix()[i][j] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+
+        // std::cout << "Projection Matrix: " << std::endl;
+        // for (int i = 0; i < 4; ++i) {
+        //     for (int j = 0; j < 4; ++j) {
+        //         std::cout << glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f)[i][j] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

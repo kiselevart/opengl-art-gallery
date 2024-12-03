@@ -17,6 +17,10 @@ public:
     float movementSpeed;
     float mouseSensitivity;
     
+    // Member variables to track mouse movement
+    float lastX, lastY;  // Last mouse position
+    bool firstMouse;      // Flag to detect first mouse movement
+
     Camera(glm::vec3 startPos, glm::vec3 startUp, float startYaw, float startPitch);
     glm::mat4 getViewMatrix();
     void processKeyboardInput(GLFWwindow* window, float deltaTime);
