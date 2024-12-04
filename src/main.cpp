@@ -1,4 +1,4 @@
-#include <GL/glew.h>  
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,17 +10,20 @@
 
 float lastX = 400, lastY = 300;
 bool firstMouse = true;
-float xpos, ypos;
+float xpos = lastX, ypos = lastY;
 
 void checkOpenGLErrors(const char* function) {
     GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
+    while (error != GL_NO_ERROR) {
         std::cerr << "OpenGL error in " << function << ": " << error << std::endl;
+        error = glGetError();
     }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
+    if (width > 0 && height > 0) {
+        glViewport(0, 0, width, height);
+    }
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
@@ -53,7 +56,7 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
-    glewExperimental = GL_TRUE;  
+    glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         std::cerr << "GLEW initialization failed!" << std::endl;
         return -1;
@@ -62,24 +65,22 @@ int main() {
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
 
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);    
-    
-    glDisable(GL_DEPTH_TEST); // enable this back
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    glEnable(GL_DEPTH_TEST);
 
     Camera camera(glm::vec3(0.0f, 1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
-    Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+    Shader planeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
-    // Plane data
     float planeVertices[] = {
-        -5.0f, 0.0f,  5.0f,  0.0f, 1.0f,
-         5.0f, 0.0f,  5.0f,  1.0f, 1.0f,
-        -5.0f, 0.0f, -5.0f,  0.0f, 0.0f,
-         5.0f, 0.0f,  5.0f,  1.0f, 1.0f,
-         5.0f, 0.0f, -5.0f,  1.0f, 0.0f,
-        -5.0f, 0.0f, -5.0f,  0.0f, 0.0f,
+        -5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+         5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+        -5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+         5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+         5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+        -5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
     };
 
     GLuint planeVAO, planeVBO;
@@ -87,33 +88,32 @@ int main() {
     glGenBuffers(1, &planeVBO);
 
     glBindVertexArray(planeVAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     GLuint planeTexture = loadTexture("assets/textures/wooden_floor.jpg");
 
-    Light light = {
-        glm::vec3(2.0f, 2.0f, 2.0f),
-        glm::vec3(0.3f, 0.3f, 0.3f),
-        glm::vec3(0.7f, 0.7f, 0.7f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-    };
+    Light light;
+    light.position = glm::vec3(2.0f, 2.0f, 2.0f);
+    light.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
+    light.diffuse = glm::vec3(0.7f, 0.7f, 0.7f);
+    light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
 
     float deltaTime = 0.0f, lastFrame = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // THIS REMOVES THE PLANE IDK WHY
-
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         float xOffset = xpos - lastX;
         float yOffset = lastY - ypos;
@@ -128,38 +128,27 @@ int main() {
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
+        if (width == 0 || height == 0) continue;
 
-        shader.use();
-        shader.setMat4("view", camera.getViewMatrix());
-        shader.setMat4("projection", glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f));
-        
-        setLightProperties(shader, light, camera.position);
+        planeShader.use();
+        planeShader.setVec3("light.position", glm::vec3(camera.getViewMatrix() * glm::vec4(light.position, 1.0f)));
+        planeShader.setVec3("light.ambient", light.ambient);
+        planeShader.setVec3("light.diffuse", light.diffuse);
+        planeShader.setVec3("light.specular", light.specular);
+        planeShader.setFloat("material.shininess", 32.0f);
+        planeShader.setVec3("viewPos", camera.position);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-        shader.setMat4("model", model);
+        planeShader.setMat4("view", camera.getViewMatrix());
+        planeShader.setMat4("projection", glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f));
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        planeShader.setMat4("model", model);
 
         glBindVertexArray(planeVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, planeTexture);
+        planeShader.setInt("material.diffuse", 0);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        // Print matrices
-        // std::cout << "View Matrix: " << std::endl;
-        // for (int i = 0; i < 4; ++i) {
-        //     for (int j = 0; j < 4; ++j) {
-        //         std::cout << camera.getViewMatrix()[i][j] << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
-
-        // std::cout << "Projection Matrix: " << std::endl;
-        // for (int i = 0; i < 4; ++i) {
-        //     for (int j = 0; j < 4; ++j) {
-        //         std::cout << glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f)[i][j] << " ";
-        //     }
-        //     std::cout << std::endl;
-        // }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
