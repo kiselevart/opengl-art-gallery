@@ -8,10 +8,6 @@
 #include "lighting.h"
 #include <iostream>
 
-float lastX = 400, lastY = 300;
-bool firstMouse = true;
-float xpos = lastX, ypos = lastY;
-
 void checkOpenGLErrors(const char* function) {
     GLenum error = glGetError();
     while (error != GL_NO_ERROR) {
@@ -27,14 +23,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
-    (void)window;
-    if (firstMouse) {
-        lastX = xposIn;
-        lastY = yposIn;
-        firstMouse = false;
-    }
-    xpos = xposIn;
-    ypos = yposIn;
+    Camera* camera = (Camera*)glfwGetWindowUserPointer(window);
+    camera->processMouseMovement(xposIn, yposIn);
 }
 
 int main() {
@@ -64,7 +54,7 @@ int main() {
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -72,6 +62,8 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     Camera camera(glm::vec3(0.0f, 1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
+    glfwSetWindowUserPointer(window, &camera);
+
     Shader planeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
     float planeVertices[] = {
@@ -98,12 +90,12 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    GLuint planeTexture = loadTexture("assets/textures/wooden_floor.jpg");
+    GLuint planeTexture = loadTexture("assets/textures/rainbow.jpg");
 
     Light light;
     light.position = glm::vec3(2.0f, 2.0f, 2.0f);
-    light.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
-    light.diffuse = glm::vec3(0.7f, 0.7f, 0.7f);
+    light.ambient = glm::vec3(0.5f, 0.5f, 0.5f);
+    light.diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
     light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
 
     float deltaTime = 0.0f, lastFrame = 0.0f;
@@ -114,13 +106,6 @@ int main() {
         lastFrame = currentFrame;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        float xOffset = xpos - lastX;
-        float yOffset = lastY - ypos;
-        lastX = xpos;
-        lastY = ypos;
-        camera.processMouseMovement(xOffset, yOffset);
-        camera.processKeyboardInput(window, deltaTime);
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
@@ -135,7 +120,7 @@ int main() {
         planeShader.setVec3("light.ambient", light.ambient);
         planeShader.setVec3("light.diffuse", light.diffuse);
         planeShader.setVec3("light.specular", light.specular);
-        planeShader.setFloat("material.shininess", 32.0f);
+        planeShader.setFloat("material.shininess", 20.0f);
         planeShader.setVec3("viewPos", camera.position);
 
         planeShader.setMat4("view", camera.getViewMatrix());

@@ -28,7 +28,7 @@ void Camera::processKeyboardInput(GLFWwindow* window, float deltaTime) {
 }
 
 void Camera::processMouseMovement(float xpos, float ypos) {
-    if (firstMouse) {  // On first mouse movement, set initial positions
+    if (firstMouse) {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
@@ -47,6 +47,10 @@ void Camera::processMouseMovement(float xpos, float ypos) {
 
     if (pitch > 89.0f) pitch = 89.0f;  // Limit pitch to avoid flipping
     if (pitch < -89.0f) pitch = -89.0f;
+
+    // Normalize yaw to keep it within 0–360 degrees
+    if (yaw > 360.0f) yaw -= 360.0f;
+    if (yaw < 0.0f) yaw += 360.0f;
 
     // Update the front vector based on new yaw and pitch
     glm::vec3 newFront;
