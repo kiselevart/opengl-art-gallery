@@ -15,6 +15,10 @@ const char* WINDOW_NAME = "Louvre Simulation";
 struct ApplicationState {
     Camera camera;
     Shader shader;
+    // Ceiling
+    GLuint ceilingVAO;
+    GLuint ceilingVBO;
+    GLuint ceilingTexture;
     // Floor
     GLuint planeVAO;
     GLuint planeVBO;
@@ -82,7 +86,15 @@ GLFWwindow* initializeWindow() {
 }
 
 void setupGeometry(ApplicationState& state) {
-    // Floor vertices
+    float ceilingVertices[] = {
+        -10.0f, 10.0f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+        10.0f, 10.0f, -10.0f,  0.0f, 1.0f, 0.0f,   5.0f, 0.0f,
+        10.0f, 10.0f,  10.0f,  0.0f, 1.0f, 0.0f,   5.0f, 5.0f,
+        -10.0f, 10.0f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+        10.0f, 10.0f,  10.0f,  0.0f, 1.0f, 0.0f,   5.0f, 5.0f,
+        -10.0f, 10.0f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 5.0f
+    };
+
     float planeVertices[] = {
         -10.0f, 0.0f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
          10.0f, 0.0f,  10.0f,  0.0f, 1.0f, 0.0f,   10.0f, 10.0f,
@@ -92,40 +104,55 @@ void setupGeometry(ApplicationState& state) {
         -10.0f, 0.0f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
     };
 
-    // Wall vertices (front and back walls)
     float wallVertices[] = {
         // Front wall
         -10.0f,  0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // bottom left
         10.0f,   0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 0.0f,  // bottom right
-        10.0f,   5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 2.5f,  // top right
+        10.0f,   10.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 10.0f, // top right
         -10.0f,  0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // bottom left
-        10.0f,   5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 2.5f,  // top right
-        -10.0f,  5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 2.5f,  // top left
+        10.0f,   10.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 10.0f, // top right
+        -10.0f,  10.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 10.0f, // top left
 
         // Back wall
         -10.0f,  0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
         10.0f,   0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 0.0f,
-        10.0f,   5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 2.5f,
+        10.0f,   10.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 10.0f,
         -10.0f,  0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
-        10.0f,   5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 2.5f,
-        -10.0f,  5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 2.5f,
+        10.0f,   10.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 10.0f,
+        -10.0f,  10.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 10.0f,
 
         // Left wall
         -10.0f,  0.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
         -10.0f,  0.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 0.0f,
-        -10.0f,  5.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 2.5f,
+        -10.0f,  10.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 10.0f,
         -10.0f,  0.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
-        -10.0f,  5.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 2.5f,
-        -10.0f,  5.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 2.5f,
+        -10.0f,  10.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 10.0f,
+        -10.0f,  10.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 10.0f,
 
         // Right wall
         10.0f,  0.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
         10.0f,  0.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 0.0f,
-        10.0f,  5.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 2.5f,
+        10.0f,  10.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 10.0f,
         10.0f,  0.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
-        10.0f,  5.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 2.5f,
-        10.0f,  5.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 2.5f,
+        10.0f,  10.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 10.0f,
+        10.0f,  10.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 10.0f,
     };
+
+    // Setup ceiling VAO/VBO
+    GLuint ceilingVAO, ceilingVBO;
+    glGenVertexArrays(1, &ceilingVAO);
+    glGenBuffers(1, &ceilingVBO);
+
+    glBindVertexArray(ceilingVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, ceilingVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ceilingVertices), ceilingVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // Setup floor VAO/VBO
     glGenVertexArrays(1, &state.planeVAO);
@@ -223,6 +250,17 @@ void render(GLFWwindow* window, ApplicationState& state) {
     glBindTexture(GL_TEXTURE_2D, state.wallTexture);
     state.shader.setInt("material.diffuse", 0);
     glDrawArrays(GL_TRIANGLES, 0, 24); // 4 walls * 2 triangles * 3 vertices
+
+    // Render ceiling
+    model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f)); // Position it above the walls
+    state.shader.setMat4("model", model);
+
+    glBindVertexArray(state.ceilingVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state.wallTexture); // You can reuse the same texture or set a new one
+    state.shader.setInt("material.diffuse", 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6); // 2 triangles * 3 vertices
+
 }
 
 int main() {
@@ -238,7 +276,11 @@ int main() {
 
     setupGeometry(state);
     setupLighting(state);
+
+    // load textures 
     state.planeTexture = loadTexture("assets/textures/wood.jpg");
+    state.wallTexture = loadTexture("assets/textures/gray.png");
+    state.ceilingTexture = loadTexture("assets/textures/white_bordered.png");
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
