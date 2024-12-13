@@ -8,6 +8,31 @@
 #include "lighting.h"
 #include <iostream>
 
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
+const char* WINDOW_NAME = "Louvre Simulation";
+
+struct ApplicationState {
+    Camera camera;
+    Shader shader;
+    // Floor
+    GLuint planeVAO;
+    GLuint planeVBO;
+    GLuint planeTexture;
+    // Walls
+    GLuint wallVAO;
+    GLuint wallVBO;
+    GLuint wallTexture;
+    // Lighting
+    Light light;
+    DirectionalLight dirLight;
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+
+    ApplicationState() : camera(glm::vec3(0.0f, 2.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f),
+                        shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl") {}
+};
+
 void checkOpenGLErrors(const char* function) {
     GLenum error = glGetError();
     while (error != GL_NO_ERROR) {
@@ -27,10 +52,10 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     camera->processMouseMovement(xposIn, yposIn);
 }
 
-int main() {
+GLFWwindow* initializeWindow() {
     if (!glfwInit()) {
         std::cerr << "GLFW initialization failed!" << std::endl;
-        return -1;
+        return nullptr;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -38,51 +63,78 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, WINDOW_NAME, NULL, NULL);
     if (!window) {
         std::cerr << "GLFW window creation failed!" << std::endl;
         glfwTerminate();
-        return -1;
+        return nullptr;
     }
 
     glfwMakeContextCurrent(window);
-    glewExperimental = GL_TRUE;
+    
     if (glewInit() != GLEW_OK) {
         std::cerr << "GLEW initialization failed!" << std::endl;
-        return -1;
+        return nullptr;
     }
 
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+    return window;
+}
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    glEnable(GL_DEPTH_TEST);
-
-    Camera camera(glm::vec3(0.0f, 1.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
-    glfwSetWindowUserPointer(window, &camera);
-
-    Shader planeShader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
-
+void setupGeometry(ApplicationState& state) {
+    // Floor vertices
     float planeVertices[] = {
-        -5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
-         5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
-        -5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
-         5.0f, 0.0f,  5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
-         5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-        -5.0f, 0.0f, -5.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+        -10.0f, 0.0f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+         10.0f, 0.0f,  10.0f,  0.0f, 1.0f, 0.0f,   10.0f, 10.0f,
+        -10.0f, 0.0f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+         10.0f, 0.0f,  10.0f,  0.0f, 1.0f, 0.0f,   10.0f, 10.0f,
+         10.0f, 0.0f, -10.0f,  0.0f, 1.0f, 0.0f,   10.0f, 0.0f,
+        -10.0f, 0.0f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
     };
 
-    GLuint planeVAO, planeVBO;
-    glGenVertexArrays(1, &planeVAO);
-    glGenBuffers(1, &planeVBO);
+    // Wall vertices (front and back walls)
+    float wallVertices[] = {
+        // Front wall
+        -10.0f,  0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // bottom left
+        10.0f,   0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 0.0f,  // bottom right
+        10.0f,   5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 2.5f,  // top right
+        -10.0f,  0.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // bottom left
+        10.0f,   5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   5.0f, 2.5f,  // top right
+        -10.0f,  5.0f, -10.0f,  0.0f, 0.0f, 1.0f,   0.0f, 2.5f,  // top left
 
-    glBindVertexArray(planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+        // Back wall
+        -10.0f,  0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
+        10.0f,   0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 0.0f,
+        10.0f,   5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 2.5f,
+        -10.0f,  0.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
+        10.0f,   5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  5.0f, 2.5f,
+        -10.0f,  5.0f, 10.0f,   0.0f, 0.0f, -1.0f,  0.0f, 2.5f,
+
+        // Left wall
+        -10.0f,  0.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
+        -10.0f,  0.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 0.0f,
+        -10.0f,  5.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 2.5f,
+        -10.0f,  0.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
+        -10.0f,  5.0f, -10.0f,  1.0f, 0.0f, 0.0f,   5.0f, 2.5f,
+        -10.0f,  5.0f,  10.0f,  1.0f, 0.0f, 0.0f,   0.0f, 2.5f,
+
+        // Right wall
+        10.0f,  0.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+        10.0f,  0.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 0.0f,
+        10.0f,  5.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 2.5f,
+        10.0f,  0.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 0.0f,
+        10.0f,  5.0f, -10.0f,   -1.0f, 0.0f, 0.0f,  5.0f, 2.5f,
+        10.0f,  5.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 2.5f,
+    };
+
+    // Setup floor VAO/VBO
+    glGenVertexArrays(1, &state.planeVAO);
+    glGenBuffers(1, &state.planeVBO);
+    
+    glBindVertexArray(state.planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, state.planeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
-
+    
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -90,60 +142,116 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    GLuint planeTexture = loadTexture("assets/textures/rainbow.jpg");
+    // Setup wall VAO/VBO
+    glGenVertexArrays(1, &state.wallVAO);
+    glGenBuffers(1, &state.wallVBO);
+    
+    glBindVertexArray(state.wallVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, state.wallVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(wallVertices), wallVertices, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+}
 
-    Light light;
-    light.position = glm::vec3(2.0f, 2.0f, 2.0f);
-    light.ambient = glm::vec3(0.5f, 0.5f, 0.5f);
-    light.diffuse = glm::vec3(0.8f, 0.8f, 0.8f);
-    light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+void setupLighting(ApplicationState& state) {
+    state.light.position = glm::vec3(2.0f, 2.0f, 2.0f);
+    state.light.ambient = glm::vec3(0.5f, 0.5f, 0.5f);
+    state.light.diffuse = glm::vec3(0.7f, 0.7f, 0.7f);
+    state.light.specular = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    float deltaTime = 0.0f, lastFrame = 0.0f;
+    state.dirLight.direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+    state.dirLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
+    state.dirLight.diffuse = glm::vec3(0.7f, 0.7f, 0.7f);
+    state.dirLight.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+}
+
+void render(GLFWwindow* window, ApplicationState& state) {
+    float currentFrame = glfwGetTime();
+    state.deltaTime = currentFrame - state.lastFrame;
+    state.lastFrame = currentFrame;
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    state.camera.processKeyboardInput(window, state.deltaTime);
+
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    if (width == 0 || height == 0) return;
+
+    state.shader.use();
+    
+    // Set lighting uniforms
+    state.shader.setVec3("light.position", state.light.position);
+    state.shader.setVec3("light.ambient", state.light.ambient);
+    state.shader.setVec3("light.diffuse", state.light.diffuse);
+    state.shader.setVec3("light.specular", state.light.specular);
+    state.shader.setFloat("material.shininess", 32.0f);
+    state.shader.setVec3("viewPos", state.camera.position);
+
+    state.shader.setVec3("dirLight.direction", state.dirLight.direction);
+    state.shader.setVec3("dirLight.ambient", state.dirLight.ambient);
+    state.shader.setVec3("dirLight.diffuse", state.dirLight.diffuse);
+    state.shader.setVec3("dirLight.specular", state.dirLight.specular);
+
+    // Set matrices
+    glm::mat4 view = state.camera.getViewMatrix();
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
+    state.shader.setMat4("view", view);
+    state.shader.setMat4("projection", projection);
+
+    // Render floor
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    state.shader.setMat4("model", model);
+    
+    glBindVertexArray(state.planeVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state.planeTexture);
+    state.shader.setInt("material.diffuse", 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    // Render walls
+    model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    state.shader.setMat4("model", model);
+    
+    glBindVertexArray(state.wallVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state.wallTexture);
+    state.shader.setInt("material.diffuse", 0);
+    glDrawArrays(GL_TRIANGLES, 0, 24); // 4 walls * 2 triangles * 3 vertices
+}
+
+int main() {
+    GLFWwindow* window = initializeWindow();
+    if (!window) return -1;
+
+    ApplicationState state;
+    glfwSetWindowUserPointer(window, &state.camera);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glEnable(GL_DEPTH_TEST);
+
+    setupGeometry(state);
+    setupLighting(state);
+    state.planeTexture = loadTexture("assets/textures/wood.jpg");
 
     while (!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        camera.processKeyboardInput(window, deltaTime);
-
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(window, true);
         }
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        if (width == 0 || height == 0) continue;
-
-        planeShader.use();
-        planeShader.setVec3("light.position", glm::vec3(camera.getViewMatrix() * glm::vec4(light.position, 1.0f)));
-        planeShader.setVec3("light.ambient", light.ambient);
-        planeShader.setVec3("light.diffuse", light.diffuse);
-        planeShader.setVec3("light.specular", light.specular);
-        planeShader.setFloat("material.shininess", 20.0f);
-        planeShader.setVec3("viewPos", camera.position);
-
-        planeShader.setMat4("view", camera.getViewMatrix());
-        planeShader.setMat4("projection", glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f));
-
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-        planeShader.setMat4("model", model);
-
-        glBindVertexArray(planeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, planeTexture);
-        planeShader.setInt("material.diffuse", 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
+        render(window, state);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &planeVAO);
-    glDeleteBuffers(1, &planeVBO);
-
+    glDeleteVertexArrays(1, &state.planeVAO);
+    glDeleteBuffers(1, &state.planeVBO);
     glfwTerminate();
     return 0;
 }
