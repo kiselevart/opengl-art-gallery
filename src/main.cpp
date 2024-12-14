@@ -187,7 +187,7 @@ void setupGeometry(ApplicationState& state) {
 
 void setupLighting(ApplicationState& state) {
     state.dirLight.direction = glm::vec3(0.5f, -1.0f, 0.5f);  
-    state.dirLight.ambient = glm::vec3(0.3f, 0.35f, 0.4f);    // Slightly blue-tinted ambient for sky light
+    state.dirLight.ambient = glm::vec3(0.5f, 0.55f, 0.60f);    // Slightly blue-tinted ambient for sky light
     state.dirLight.diffuse = glm::vec3(1.0f, 0.95f, 0.8f);    // Warm sunlight color
     state.dirLight.specular = glm::vec3(0.7f, 0.7f, 0.7f);    // Reduced specular for more natural look
 }
