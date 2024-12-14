@@ -285,14 +285,14 @@ int main() {
     state.planeTexture = loadTexture("assets/textures/gray.png");
     state.wallTexture = loadTexture("assets/textures/gray.png");
 
-    glm::vec2 imageSize = getImageSize("assets/textures/wave.jpg");
+    glm::vec2 imageSize = getImageSize("assets/textures/otter.jpg");
     float maxWidth = 10.0f;
     float maxHeight = 5.0f;
 
     glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth, maxHeight);
     
     state.paintings.emplace_back(
-        "assets/textures/wave.jpg",
+        "assets/textures/otter.jpg",
         glm::vec3(0.0f, 2.0f, 9.9f),  
         scaledSize
     );
