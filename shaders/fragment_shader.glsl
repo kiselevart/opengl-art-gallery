@@ -1,5 +1,3 @@
-// Fragment Shader
-
 #version 330 core
 
 struct Light {
@@ -9,35 +7,72 @@ struct Light {
     vec3 specular;
 };
 
-in vec3 FragPos;      // Fragment position
-in vec3 Normal;       // Normal vector
-in vec2 TexCoords;    // Texture coordinates
+struct DirLight {
+    vec3 direction;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
 
-out vec4 FragColor;   // Final color output
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoords;
 
-uniform Light light;        // Light properties
-uniform vec3 viewPos;       // Camera position
-uniform sampler2D texture1; // Texture
+out vec4 FragColor;
+
+uniform Light light;
+uniform DirLight dirLight;
+uniform vec3 viewPos;
+uniform sampler2D texture1;
+
+// Function to calculate directional light contribution
+vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
+    vec3 lightDir = normalize(-light.direction);
+    
+    // Diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+    
+    // Specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    
+    // Combine results
+    vec3 ambient = light.ambient * texture(texture1, TexCoords).rgb;
+    vec3 diffuse = light.diffuse * diff * texture(texture1, TexCoords).rgb;
+    vec3 specular = light.specular * spec;
+    
+    return (ambient + diffuse + specular);
+}
+
+// Function to calculate point light contribution
+vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+    vec3 lightDir = normalize(light.position - fragPos);
+    
+    // Diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+    
+    // Specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    
+    // Combine results
+    vec3 ambient = light.ambient * texture(texture1, TexCoords).rgb;
+    vec3 diffuse = light.diffuse * diff * texture(texture1, TexCoords).rgb;
+    vec3 specular = light.specular * spec;
+    
+    return (ambient + diffuse + specular);
+}
 
 void main() {
-    // Ambient lighting (bright white)
-    vec3 ambient = light.ambient * texture(texture1, TexCoords).rgb;
-
-    // Diffuse lighting (bright white)
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(light.position - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * texture(texture1, TexCoords).rgb;
-
-    // Specular lighting (bright white)
     vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0); // Shininess = 32
-    vec3 specular = light.specular * spec;
-
-    // Combine ambient, diffuse, and specular lighting components
-    vec3 result = ambient + diffuse + specular;
-
-    // Final color output
-    FragColor = vec4(result, 1.0); // Set alpha to 1.0 (opaque)
+    
+    // Calculate both lighting contributions
+    vec3 dirResult = CalcDirLight(dirLight, norm, viewDir);
+    vec3 pointResult = CalcPointLight(light, norm, FragPos, viewDir);
+    
+    // Combine both lighting results
+    vec3 result = dirResult + pointResult;
+    
+    FragColor = vec4(result, 1.0);
 }
