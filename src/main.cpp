@@ -329,7 +329,7 @@ int main() {
     
     state.paintings.emplace_back(
         "assets/textures/otter.jpg",
-        glm::vec3(0.0f, 4.0f, -9.9f),  
+        glm::vec3(0.0f, 4.3f, -9.9f),  
         scaledSize
     );
 
