@@ -1,8 +1,8 @@
 #include "camera.h"
 
-float maxX = 10.0f, minX = -10.0f;
-float maxY = 10.0f, minY = 0.0f;
-float maxZ = 10.0f, minZ = -10.0f;
+float maxX = 9.5f, minX = -9.5f;
+float maxY = 2.0f, minY = 2.0f;
+float maxZ = 9.5f, minZ = -9.5f;
 
 Camera::Camera(glm::vec3 startPos, glm::vec3 startUp, float startYaw, float startPitch)
     : position(startPos), up(startUp), yaw(startYaw), pitch(startPitch) {
