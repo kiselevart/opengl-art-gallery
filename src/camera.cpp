@@ -1,5 +1,9 @@
 #include "camera.h"
 
+float maxX = 10.0f, minX = -10.0f;
+float maxY = 10.0f, minY = 0.0f;
+float maxZ = 10.0f, minZ = -10.0f;
+
 Camera::Camera(glm::vec3 startPos, glm::vec3 startUp, float startYaw, float startPitch)
     : position(startPos), up(startUp), yaw(startYaw), pitch(startPitch) {
     front = glm::vec3(0.0f, 0.0f, -1.0f); // Default front vector
@@ -16,16 +20,31 @@ glm::mat4 Camera::getViewMatrix() {
 }
 
 void Camera::processKeyboardInput(GLFWwindow* window, float deltaTime) {
-    float velocity = movementSpeed * deltaTime;
+    float velocity = movementSpeed * deltaTime * 2;
+    glm::vec3 newPos = position;
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        position += velocity * front;
+        newPos += velocity * front;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        position -= velocity * front;
+        newPos -= velocity * front;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        position -= glm::normalize(glm::cross(front, up)) * velocity;
+        newPos -= glm::normalize(glm::cross(front, up)) * velocity;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        position += glm::normalize(glm::cross(front, up)) * velocity;
+        newPos += glm::normalize(glm::cross(front, up)) * velocity;
+
+    // Simple collision detection: prevent camera from going out of bounds
+    // Assuming the world is a box with limits in the X, Y, and Z axes.
+    if (newPos.x > maxX || newPos.x < minX) 
+        newPos.x = position.x;  // Prevent moving outside X bounds
+    if (newPos.y > maxY || newPos.y < minY) 
+        newPos.y = position.y;  // Prevent moving outside Y bounds
+    if (newPos.z > maxZ || newPos.z < minZ) 
+        newPos.z = position.z;  // Prevent moving outside Z bounds
+
+    // Update the camera's position if no collision occurred
+    position = newPos;
 }
+
 
 void Camera::processMouseMovement(float xpos, float ypos) {
     if (firstMouse) {

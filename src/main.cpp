@@ -17,27 +17,94 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 GLFWwindow* initializeWindow();
 
+class Painting {
+public:
+    GLuint VAO, VBO, EBO;
+    GLuint texture;
+    glm::vec3 position;
+    glm::vec2 size;
+
+    Painting(const char* texturePath, const glm::vec3& pos, const glm::vec2& dimensions) 
+        : position(pos), size(dimensions) {
+        setup();
+        texture = loadTexture(texturePath);
+    }
+
+    ~Painting() {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
+
+    void draw(Shader& shader) {
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        shader.setMat4("model", model);
+        
+        glBindVertexArray(VAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        shader.setInt("material.diffuse", 0);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+
+private:
+    void setup() {
+        float halfWidth = size.x / 2.0f;
+        float halfHeight = size.y / 2.0f;
+        
+        float vertices[] = {
+            // positions          // normals           // texture coords
+            -halfWidth,  halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+             halfWidth,  halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+             halfWidth, -halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+            -halfWidth, -halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        };
+
+        unsigned int indices[] = {
+            0, 1, 2,
+            0, 2, 3
+        };
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(2);
+    }
+};
+
 struct ApplicationState {
     Camera camera;
     Shader shader;
-    // Ceiling
-    GLuint ceilingVAO;
-    GLuint ceilingVBO;
-    GLuint ceilingTexture;
-    // Floor
+    // Room geometry
     GLuint planeVAO;
     GLuint planeVBO;
     GLuint planeTexture;
-    // Walls
     GLuint wallVAO;
     GLuint wallVBO;
     GLuint wallTexture;
     // Lighting
     Light light;
     DirectionalLight dirLight;
-
+    // Time
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
+
+    // List of paintings
+    std::vector<Painting> paintings;
 
     ApplicationState() : camera(glm::vec3(0.0f, 2.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f),
                         shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl") {}
@@ -119,7 +186,7 @@ void setupGeometry(ApplicationState& state) {
 }
 
 void setupLighting(ApplicationState& state) {
-    state.dirLight.direction = glm::vec3(0.0f, -1.0f, 0.0f);  // Straight down from above
+    state.dirLight.direction = glm::vec3(0.5f, -1.0f, 0.5f);  // Straight down from above
     state.dirLight.ambient = glm::vec3(0.3f, 0.35f, 0.4f);    // Slightly blue-tinted ambient for sky light
     state.dirLight.diffuse = glm::vec3(1.0f, 0.95f, 0.8f);    // Warm sunlight color
     state.dirLight.specular = glm::vec3(0.7f, 0.7f, 0.7f);    // Reduced specular for more natural look
@@ -174,6 +241,10 @@ void render(GLFWwindow* window, ApplicationState& state) {
     state.shader.setInt("material.diffuse", 0);
     glDrawArrays(GL_TRIANGLES, 0, 24); // 4 walls * 2 triangles * 3 vertices
 
+    // Render all paintings
+    for (auto& painting : state.paintings) {
+        painting.draw(state.shader);
+    }
 }
 
 int main() {
@@ -191,8 +262,14 @@ int main() {
     setupLighting(state);
 
     // load textures 
-    state.planeTexture = loadTexture("assets/textures/wood.jpg");
+    state.planeTexture = loadTexture("assets/textures/gray.png");
     state.wallTexture = loadTexture("assets/textures/gray.png");
+
+    state.paintings.emplace_back(
+        "assets/textures/wave.jpg",
+        glm::vec3(0.0f, 2.0f, -9.9f),  
+        glm::vec2(4.0f, 2.0f)          
+    );
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
