@@ -232,7 +232,7 @@ void setupGeometry(ApplicationState& state) {
 }
 
 void setupLighting(ApplicationState& state) {
-    state.dirLight.direction = glm::vec3(0.5f, -10.0f, 0.5f);  
+    state.dirLight.direction = glm::vec3(1.0f, -10.0f, 0.0f);  
     state.dirLight.ambient = glm::vec3(0.7f, 0.83f, 0.80f);    // Increased ambient for brighter overall illumination
     state.dirLight.diffuse = glm::vec3(1.2f, 1.15f, 0.8f);     // Intensified warm sunlight
     state.dirLight.specular = glm::vec3(1.0f, 1.0f, 1.0f);     // Increased specular for stronger highlights
@@ -325,11 +325,11 @@ int main() {
     float maxWidth = 10.0f;
     float maxHeight = 5.0f;
 
-    glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth, maxHeight);
+    glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth*2, maxHeight*2);
     
     state.paintings.emplace_back(
-        "assets/textures/otter2.jpg",
-        glm::vec3(0.0f, 2.0f, -9.9f),  
+        "assets/textures/otter.jpg",
+        glm::vec3(0.0f, 4.0f, -9.9f),  
         scaledSize
     );
 
