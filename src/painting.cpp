@@ -10,10 +10,10 @@ Painting::Painting(const char* texturePath, const glm::vec3& pos, const glm::vec
 
 void Painting::setupGeometry() {
     float vertices[] = {
-        -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
-         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
-         0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // Bottom-left UV changed
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 0.0f,  // Bottom-right UV changed
+        0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 1.0f,  // Top-right UV changed
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 1.0f   // Top-left UV changed
     };
     unsigned int indices[] = {
         0, 1, 2,
