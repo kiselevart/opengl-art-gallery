@@ -73,17 +73,13 @@ public:
 
 private:
     void setup() {
-        float halfWidth = size.x / 2.0f;
-        float halfHeight = size.y / 2.0f;
-        
-        float vertices[] = {
-            // positions          // normals           // texture coords
-            -halfWidth,  halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
-             halfWidth,  halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
-             halfWidth, -halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
-            -halfWidth, -halfHeight, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
-        };
 
+        float vertices[] = {
+            -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  // Bottom-left
+             0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 0.0f,  // Bottom-right
+             0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   1.0f, 1.0f,  // Top-right
+            -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,   0.0f, 1.0f   // Top-left
+        };
         unsigned int indices[] = {
             0, 1, 2,
             0, 2, 3
@@ -211,8 +207,8 @@ void setupGeometry(ApplicationState& state) {
 
 void setupLighting(ApplicationState& state) {
     state.dirLight.direction = glm::vec3(0.5f, -1.0f, 0.5f);  
-    state.dirLight.ambient = glm::vec3(0.5f, 0.55f, 0.60f);    // Slightly blue-tinted ambient for sky light
-    state.dirLight.diffuse = glm::vec3(1.0f, 0.95f, 0.8f);    // Warm sunlight color
+    state.dirLight.ambient = glm::vec3(0.5f, 0.63f, 0.60f);    // Slightly blue-tinted ambient for sky light
+    state.dirLight.diffuse = glm::vec3(1.0f, 0.95f, 0.6f);    // Warm sunlight color
     state.dirLight.specular = glm::vec3(0.7f, 0.7f, 0.7f);    // Reduced specular for more natural look
 }
 
@@ -289,15 +285,15 @@ int main() {
     state.planeTexture = loadTexture("assets/textures/gray.png");
     state.wallTexture = loadTexture("assets/textures/gray.png");
 
-    glm::vec2 imageSize = getImageSize("assets/textures/mona.jpg");
+    glm::vec2 imageSize = getImageSize("assets/textures/wave.jpg");
     float maxWidth = 10.0f;
     float maxHeight = 5.0f;
 
     glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth, maxHeight);
     
     state.paintings.emplace_back(
-        "assets/textures/mona.jpg",
-        glm::vec3(0.0f, 2.0f, -9.9f),  
+        "assets/textures/wave.jpg",
+        glm::vec3(0.0f, 2.0f, 9.9f),  
         scaledSize
     );
 
