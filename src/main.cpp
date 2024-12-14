@@ -116,6 +116,9 @@ struct ApplicationState {
     GLuint wallVAO;
     GLuint wallVBO;
     GLuint wallTexture;
+    GLuint ceilingVAO;
+    GLuint ceilingVBO;
+    GLuint ceilingTexture;
     // Lighting
     Light light;
     DirectionalLight dirLight;
@@ -174,6 +177,15 @@ void setupGeometry(ApplicationState& state) {
         10.0f,  10.0f,  10.0f,   -1.0f, 0.0f, 0.0f,  0.0f, 10.0f,
     };
 
+    float ceilingVertices[] = {
+        -10.0f, 10.0f,  10.0f,  0.0f, -1.0f, 0.0f,   0.0f, 10.0f,
+         10.0f, 10.0f,  10.0f,  0.0f, -1.0f, 0.0f,   10.0f, 10.0f,
+        -10.0f, 10.0f, -10.0f,  0.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+         10.0f, 10.0f,  10.0f,  0.0f, -1.0f, 0.0f,   10.0f, 10.0f,
+         10.0f, 10.0f, -10.0f,  0.0f, -1.0f, 0.0f,   10.0f, 0.0f,
+        -10.0f, 10.0f, -10.0f,  0.0f, -1.0f, 0.0f,   0.0f, 0.0f,
+    };
+
     // Setup floor VAO/VBO
     glGenVertexArrays(1, &state.planeVAO);
     glGenBuffers(1, &state.planeVBO);
@@ -203,13 +215,27 @@ void setupGeometry(ApplicationState& state) {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    glGenVertexArrays(1, &state.ceilingVAO);
+    glGenBuffers(1, &state.ceilingVBO);
+    
+    glBindVertexArray(state.ceilingVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, state.ceilingVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(ceilingVertices), ceilingVertices, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 }
 
 void setupLighting(ApplicationState& state) {
-    state.dirLight.direction = glm::vec3(0.5f, -1.0f, 0.5f);  
-    state.dirLight.ambient = glm::vec3(0.5f, 0.63f, 0.60f);    // Slightly blue-tinted ambient for sky light
-    state.dirLight.diffuse = glm::vec3(1.0f, 0.95f, 0.6f);    // Warm sunlight color
-    state.dirLight.specular = glm::vec3(0.7f, 0.7f, 0.7f);    // Reduced specular for more natural look
+    state.dirLight.direction = glm::vec3(0.5f, -10.0f, 0.5f);  
+    state.dirLight.ambient = glm::vec3(0.7f, 0.83f, 0.80f);    // Increased ambient for brighter overall illumination
+    state.dirLight.diffuse = glm::vec3(1.2f, 1.15f, 0.8f);     // Intensified warm sunlight
+    state.dirLight.specular = glm::vec3(1.0f, 1.0f, 1.0f);     // Increased specular for stronger highlights
 }
 
 void render(GLFWwindow* window, ApplicationState& state) {
@@ -261,6 +287,15 @@ void render(GLFWwindow* window, ApplicationState& state) {
     state.shader.setInt("material.diffuse", 0);
     glDrawArrays(GL_TRIANGLES, 0, 24); // 4 walls * 2 triangles * 3 vertices
 
+    model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+    state.shader.setMat4("model", model);
+    
+    glBindVertexArray(state.ceilingVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state.ceilingTexture);
+    state.shader.setInt("material.diffuse", 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
     // Render all paintings
     for (auto& painting : state.paintings) {
         painting.draw(state.shader);
@@ -282,8 +317,9 @@ int main() {
     setupLighting(state);
 
     // load textures 
-    state.planeTexture = loadTexture("assets/textures/gray.png");
+    state.planeTexture = loadTexture("assets/textures/black_tile.jpg");
     state.wallTexture = loadTexture("assets/textures/gray.png");
+    state.ceilingTexture = loadTexture("assets/textures/gray.png"); // New: load ceiling texture
 
     glm::vec2 imageSize = getImageSize("assets/textures/otter.jpg");
     float maxWidth = 10.0f;
@@ -292,8 +328,8 @@ int main() {
     glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth, maxHeight);
     
     state.paintings.emplace_back(
-        "assets/textures/otter.jpg",
-        glm::vec3(0.0f, 2.0f, 9.9f),  
+        "assets/textures/otter2.jpg",
+        glm::vec3(0.0f, 2.0f, -9.9f),  
         scaledSize
     );
 
