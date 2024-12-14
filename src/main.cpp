@@ -7,6 +7,9 @@
 #include "texture.h"
 #include "lighting.h"
 #include <iostream>
+#include <vector>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -16,6 +19,27 @@ void checkOpenGLErrors(const char* function);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 GLFWwindow* initializeWindow();
+
+
+glm::vec2 getImageSize(const std::string& path) {
+    int width, height, channels;
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+    if (data) {
+        stbi_image_free(data); // Don't forget to free the image data after loading
+        return glm::vec2(static_cast<float>(width), static_cast<float>(height));
+    } else {
+        // If the image fails to load, return a default size (e.g., 0x0)
+        return glm::vec2(0.0f, 0.0f);
+    }
+}
+
+glm::vec2 scaleToFit(glm::vec2 imageSize, float maxWidth, float maxHeight) {
+    float scaleX = maxWidth / imageSize.x;
+    float scaleY = maxHeight / imageSize.y;
+    float scale = std::min(scaleX, scaleY); // Scale uniformly, keeping aspect ratio
+
+    return imageSize * scale; // Return the scaled size
+}
 
 class Painting {
 public:
@@ -265,10 +289,16 @@ int main() {
     state.planeTexture = loadTexture("assets/textures/gray.png");
     state.wallTexture = loadTexture("assets/textures/gray.png");
 
+    glm::vec2 imageSize = getImageSize("assets/textures/mona.jpg");
+    float maxWidth = 10.0f;
+    float maxHeight = 5.0f;
+
+    glm::vec2 scaledSize = scaleToFit(imageSize, maxWidth, maxHeight);
+    
     state.paintings.emplace_back(
-        "assets/textures/wave.jpg",
+        "assets/textures/mona.jpg",
         glm::vec3(0.0f, 2.0f, -9.9f),  
-        glm::vec2(4.0f, 2.0f)          
+        scaledSize
     );
 
     while (!glfwWindowShouldClose(window)) {
